@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8"/>
+    <meta http-equiv="expires" content="0">
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet"
+          href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+          crossorigin="anonymous">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet"
+          href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+          integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+          crossorigin="anonymous">
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+            integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+            crossorigin="anonymous"></script>
+    <script src="/static/phaser.js"></script>
+    <!-- <script type="module" src="static/js/game_main.js"></script> -->
+    <link rel="stylesheet" type="text/css" href="static/css/main.css">
+    <script type="module">
+        import {GameMain} from '/static/js/game_main.js';
+
+        var game_main = null;
+
+        function enterRoom(room_no, token, player_name) {
+            var ori = window.location.origin;
+            if (null !== game_main) {
+                game_main.destroy();
+                $('div.game-screen canvas').remove();
+            }
+
+            game_main = new GameMain(ori, () => {
+                $('div.login-screen').show();
+                $('div.game-screen').hide();
+                $('div.status p.status').text('Connection closed');
+            });
+
+
+            game_main.createGame();
+
+            var id = setInterval(() => {
+                if (game_main.isScenesActive()) {
+                    game_main.initConnection('ws://' + window.location.host + '/room/');
+                    game_main.enterRoom(room_no, token, player_name, () => {
+                        console.log('EnterRoom!!!!!');
+                        console.log('EnterRoom!!!!!');
+                        console.log('EnterRoom!!!!!');
+                        $('div.login-screen').hide();
+                        $('div.game-screen').show();
+                    });
+                    clearInterval(id);
+
+                }
+            }, 100);
+        }
+
+        function exitRoom() {
+            if (null !== game_main) {
+                game_main.exitRoom();
+            }
+        }
+
+
+        function login() {
+            console.log('Start login...');
+            $('div.status p.status').text('');
+            $.ajax({
+                url: '/lobby/room',
+                type: "POST",
+                data: JSON.stringify({
+                    type: 'requestEnterRoom'
+                }),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (data) {
+                    console.log('recv room data : ' + JSON.stringify(data));
+                    enterRoom(data.room_no, data.token, $('input#player-name')[0].value);
+                }
+            });
+        }
+
+        $(function () {
+            $('button#login').click(login);
+            $('button#exit-room').click(exitRoom);
+        });
+    </script>
+
+</head>
+
+<body>
+<div class="container">
+    <div class="panel panel-info">
+        <div class="panel-heading">
+            <div class="status">
+                <p class="status bg-warning"></p>
+            </div>
+
+            <div class="login-screen">
+                <div class="form-group">
+                    <label for="player-name">이름</label>
+                    <input type="text" class="form-control" id="player-name"
+                           placeholder="게임에서 사용할 이름">
+                    <small id="emailHelp" class="form-text text-muted">
+                        게임 내에서 표시할 이름을 입력합니다.
+                    </small>
+                </div>
+
+                <!--<div class="login-name">-->
+                <!--<label for="player-name">이름</label>-->
+                <!--<input type="text" id="player-name"/>-->
+                <!--</div>-->
+                <div class="login-btn">
+                    <button id="login" class="btn btn-primary">로그인</button>
+                </div>
+            </div>
+        </div>
+        <div class="panel-body">
+            <div class="game-screen" style="display:None;">
+                <button id="exit-room" class="btn btn-danger">나가기</button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+
+</html>

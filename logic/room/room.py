@@ -94,10 +94,15 @@ class Room(MsgHandlerBase):
         if MsgReservedField.type_field not in msg:
             raise ProtocolError(msg, 'Type field is missing')
 
-        if self._in_game_logic.is_in_game:
-            return self._in_game_logic.handle_message(player, msg)
-        else:
-            self._msg_handlers[msg[MsgReservedField.type_field]](player, msg)
+        try:
+            if self._in_game_logic.is_in_game:
+                return self._in_game_logic.handle_message(player, msg)
+            else:
+                self._msg_handlers[msg[MsgReservedField.type_field]](player, msg)
+        except KeyError:
+            LOG.warning('Unexpected message type {}'.format(
+                msg[MsgReservedField.type_field]
+            ))
 
     def broadcast(self, msg, except_player=None):
         for pos, player in self._players.items():
